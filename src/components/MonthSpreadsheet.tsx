@@ -4,7 +4,8 @@ import {
   PROVINCES, 
   MUNICIPALITIES_BY_PROVINCE, 
   BARANGAYS_BY_MUNICIPALITY, 
-  TEAMS 
+  TEAMS,
+  getAllowedMunicipalitiesForTeam
 } from "../data";
 import { 
   Search, 
@@ -80,25 +81,50 @@ export default function MonthSpreadsheet({
     });
   }, [logs, year, month]);
 
-  // Sync municipalities on quick select change
-  React.useEffect(() => {
-    const munis = MUNICIPALITIES_BY_PROVINCE[quickProvince] || [];
-    if (munis.length > 0) {
-      setQuickMunicipality(munis[0]);
-    } else {
-      setQuickMunicipality("");
-    }
-  }, [quickProvince]);
+  // Determine if quickTeam selection has location specifics
+  const quickHasLocationSpecifics = useMemo(() => {
+    return !quickTeam.startsWith("Team 1 ") && !quickTeam.startsWith("Team 9 ");
+  }, [quickTeam]);
 
-  // Sync barangays on quick select change
+  // Dynamic allowed municipalities list for quick-add form
+  const quickAllowedMunicipalities = useMemo(() => {
+    if (!quickHasLocationSpecifics) return [];
+    return getAllowedMunicipalitiesForTeam(quickTeam);
+  }, [quickTeam, quickHasLocationSpecifics]);
+
+  // Sync quick municipality based on selected team's available options
   React.useEffect(() => {
+    if (!quickHasLocationSpecifics) {
+      setQuickProvince("");
+      setQuickMunicipality("");
+      setQuickBarangay("");
+    } else {
+      setQuickProvince("Ilocos Norte");
+      if (quickAllowedMunicipalities.length > 0) {
+        if (!quickAllowedMunicipalities.includes(quickMunicipality)) {
+          setQuickMunicipality(quickAllowedMunicipalities[0]);
+        }
+      } else {
+        setQuickMunicipality("");
+      }
+    }
+  }, [quickTeam, quickAllowedMunicipalities, quickHasLocationSpecifics]);
+
+  // Sync quick barangay based on selected Quick Municipality change
+  React.useEffect(() => {
+    if (!quickHasLocationSpecifics) {
+      setQuickBarangay("");
+      return;
+    }
     const brgys = BARANGAYS_BY_MUNICIPALITY[quickMunicipality] || [];
     if (brgys.length > 0) {
-      setQuickBarangay(brgys[0]);
+      if (!brgys.includes(quickBarangay)) {
+        setQuickBarangay(brgys[0]);
+      }
     } else {
       setQuickBarangay("");
     }
-  }, [quickMunicipality]);
+  }, [quickMunicipality, quickHasLocationSpecifics]);
 
   // Filtered array based on Search and Selected criteria
   const finalDisplayLogs = useMemo(() => {
@@ -407,44 +433,55 @@ export default function MonthSpreadsheet({
             </select>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Province</label>
-            <select
-              value={quickProvince}
-              onChange={(e) => setQuickProvince(e.target.value)}
-              className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
-            >
-              {PROVINCES.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
+          {quickHasLocationSpecifics ? (
+            <>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Province</label>
+                <select
+                  value={quickProvince}
+                  onChange={(e) => setQuickProvince(e.target.value)}
+                  className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+                >
+                  {PROVINCES.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Municipality</label>
-            <select
-              value={quickMunicipality}
-              onChange={(e) => setQuickMunicipality(e.target.value)}
-              className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
-            >
-              {(MUNICIPALITIES_BY_PROVINCE[quickProvince] || []).map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Municipality</label>
+                <select
+                  value={quickMunicipality}
+                  onChange={(e) => setQuickMunicipality(e.target.value)}
+                  className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+                >
+                  {quickAllowedMunicipalities.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Barangay (Brgy)</label>
-            <select
-              value={quickBarangay}
-              onChange={(e) => setQuickBarangay(e.target.value)}
-              className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
-            >
-              {(BARANGAYS_BY_MUNICIPALITY[quickMunicipality] || ["Poblacion"]).map(b => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Barangay (Brgy)</label>
+                <select
+                  value={quickBarangay}
+                  onChange={(e) => setQuickBarangay(e.target.value)}
+                  className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+                >
+                  {(BARANGAYS_BY_MUNICIPALITY[quickMunicipality] || ["Poblacion"]).map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <div className="sm:col-span-3 pb-1 md:pb-0">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Location Details</label>
+              <div className="w-full bg-slate-100 border border-slate-200 rounded-lg p-1.5 text-[11px] text-slate-500 font-sans text-center font-medium">
+                Not applicable (Team 1 / 9)
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Time In</label>
@@ -541,7 +578,17 @@ export default function MonthSpreadsheet({
                         <td className="px-4 py-2">
                           <select
                             value={editForm.team || ""}
-                            onChange={(e) => setEditForm({ ...editForm, team: e.target.value })}
+                            onChange={(e) => {
+                              const selected = e.target.value;
+                              const isNoLoc = selected.startsWith("Team 1 ") || selected.startsWith("Team 9 ");
+                              setEditForm({
+                                ...editForm,
+                                team: selected,
+                                province: isNoLoc ? "" : (editForm.province || "Ilocos Norte"),
+                                municipality: isNoLoc ? "" : (editForm.municipality || ""),
+                                brgy: isNoLoc ? "" : (editForm.brgy || "")
+                              });
+                            }}
                             className="bg-white border border-slate-300 rounded p-1 text-[11px] w-full"
                           >
                             {TEAMS.map(team => (

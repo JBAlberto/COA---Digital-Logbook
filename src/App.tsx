@@ -4,6 +4,7 @@ import { MONTHS, generateId } from "./data";
 import LogEntryForm from "./components/LogEntryForm";
 import DashboardView from "./components/DashboardView";
 import MonthSpreadsheet from "./components/MonthSpreadsheet";
+import AdminLogin from "./components/AdminLogin";
 import { AnimatePresence, motion } from "motion/react";
 import { 
   Diamond, 
@@ -24,6 +25,14 @@ export default function App() {
   // State Initialization
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [currentView, setCurrentView] = useState<ViewState>("entry");
+
+  const [adminUnlocked, setAdminUnlocked] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem("digital_logbook_admin_unlocked") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
@@ -108,14 +117,16 @@ export default function App() {
         customSampleLogs.push({
           id: generateId(),
           name,
-          team: "Alpha Team",
+          team: "Team 8 (Laoag City)",
           brgy: "San Jose",
-          municipality: "Antipolo",
-          province: "Rizal",
+          municipality: "Laoag City",
+          province: "Ilocos Norte",
+          contactNumber: "09171234567",
+          purpose: "COA Field Audit",
           timeIn: `0${inHour}:00`,
           timeOut: `${outHour}:00`,
           date: dateStr,
-          createdAt: new Date(`${dateStr}T08:00:00`).getTime()
+          createdAt: new Date(`${dateStr}T12:00:00`).getTime()
         });
       }
     }
@@ -162,6 +173,31 @@ export default function App() {
     return MONTHS.find(m => m.key === selectedMonthKey) || MONTHS[0];
   }, [selectedMonthKey]);
 
+  const requireAdmin = (nextView: ViewState) => {
+    if (nextView === "entry") {
+      setCurrentView("entry");
+      return;
+    }
+
+    if (!adminUnlocked) {
+      setCurrentView("entry");
+      // Login component is shown when attempting to open dashboard/spreadsheet.
+      // We will switch to it via `adminUnlockedGateView`.
+      setAdminUnlocked(false);
+    } else {
+      setCurrentView(nextView);
+    }
+  };
+
+  const lockAdmin = () => {
+    setAdminUnlocked(false);
+    try {
+      sessionStorage.removeItem("digital_logbook_admin_unlocked");
+    } catch {
+      // ignore
+    }
+    setCurrentView("entry");
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-slate-950 selection:text-white pb-16">

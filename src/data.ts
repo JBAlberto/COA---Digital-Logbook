@@ -1,56 +1,67 @@
 import { LogEntry, MonthData } from "./types";
 
 export const PROVINCES = [
-  "Bulacan",
-  "Rizal",
-  "Cavite",
-  "Laguna",
-  "Pampanga"
+  "Ilocos Norte"
 ];
 
 export const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
-  Bulacan: ["Malolos", "Meycauayan", "Marilao", "Santa Maria", "Baliuag"],
-  Rizal: ["Antipolo", "Cainta", "Taytay", "Binangonan", "San Mateo"],
-  Cavite: ["Bacoor", "Imus", "Dasmarinas", "Silang", "Tagaytay"],
-  Laguna: ["Calamba", "Santa Rosa", "San Pedro", "Biñan", "Los Baños"],
-  Pampanga: ["San Fernando", "Angeles", "Mabalacat", "Guagua", "Lubao"]
+  "Ilocos Norte": [
+    "Adams",
+    "Bacarra",
+    "Badoc",
+    "Bangui",
+    "Bnagui", // support the typo in Team 2 label
+    "Banna",
+    "Batac City",
+    "Burgos", 
+    "Carasi",
+    "Curimao",
+    "Dingras",
+    "Dumalneg",
+    "Laoag City",
+    "Marcos", 
+    "Nueva Era",
+    "Paoay",
+    "Pasuquin",
+    "Piddig",
+    "Pinili",
+    "San Nicolas", 
+    "Sarrat",
+    "Solsona",
+    "Vintar",
+    "PGIN",
+    "District Hostpital",
+    "Pagudpud"
+  ]
 };
 
 export const BARANGAYS_BY_MUNICIPALITY: Record<string, string[]> = {
-  // Bulacan
-  Malolos: ["San Vicente", "Barihan", "Catmon", "Ligas", "Mabolo"],
-  Meycauayan: ["Bancal", "Calvario", "Hulo", "Saluysoy", "Pandayan"],
-  Marilao: ["Abangan Norte", "Abangan Sur", "Loma de Gato", "Ibayo", "Patubig"],
-  "Santa Maria": ["Poblacion", "Cay Pombo", "Pulong Buhangin", "San Jose Patag"],
-  Baliuag: ["Poblacion", "Subic", "Concepcion", "Tarcan", "Pagala"],
-
-  // Rizal
-  Antipolo: ["Dela Paz", "San Jose", "Beverly Hills", "Cupang", "Mambugan"],
-  Cainta: ["San Andres", "San Juan", "Santo Domingo", "Santo Niño"],
-  Taytay: ["San Juan", "Dolores", "San Isidro", "Santa Ana"],
-  Binangonan: ["Calumpang", "Layunan", "Libid", "Pila Pila"],
-  "San Mateo": ["Ampid I", "Dulong Bayan I", "Guitnang Bayan I", "Maly"],
-
-  // Cavite
-  Bacoor: ["Molino I", "Molino III", "Ligas I", "Bayanan", "Mambog I"],
-  Imus: ["Anabu I-A", "Bayan Luma I", "Poblacion I-A", "Tanzang Luma"],
-  Dasmarinas: ["Salawag", "Paliparan III", "Langkaan I", "Burol I"],
-  Silang: ["Biga I", "Bulihan", "Lalaan I", "Munting Ilog"],
-  Tagaytay: ["Mendez Crossing East", "Maharlika East", "Kaybagal South"],
-
-  // Laguna
-  Calamba: ["Parian", "Barandal", "Canlubang", "Pansol", "Real"],
-  "Santa Rosa": ["Balibago", "Don Jose", "Macabling", "Sinalhan", "Tagapo"],
-  "San Pedro": ["Landayan", "Pacita I", "San Antonio", "Nueva"],
-  Biñan: ["Malaban", "Platero", "San Antonio", "Santo Tomas"],
-  "Los Baños": ["Anos", "Batong Malake", "Maahas", "Tuntungin-Putho"],
-
-  // Pampanga
-  "San Fernando": ["Baliti", "Calulut", "Dolores", "Sindalan", "Telebastagan"],
-  Angeles: ["Balibago", "Cutcut", "Pulung Maragul", "Santo Cristo"],
-  Mabalacat: ["Dau", "Camachiles", "Mabiga", "San Francisco"],
-  Guagua: ["San Roque", "San Pedro", "Santa Filomena", "Beto"],
-  Lubao: ["Concepcion", "San Roque", "Santa Cruz", "Prado Siongco"]
+  Adams: ["Poblacion"],
+  Bacarra: ["Poblacion I", "Poblacion II", "San Andres", "Sangil", "Bani"],
+  Badoc: ["Poblacion I", "Poblacion II", "Alogoog", "Ar parenting", "Camanga"],
+  Bangui: ["Poblacion", "Manayon", "Abaca", "Bacsil", "Lanao"],
+  Bnagui: ["Poblacion", "Manayon", "Abaca", "Bacsil", "Lanao"],
+  Banna: ["Poblacion I", "Poblacion II", "Barangobong", "Bomitog", "Carusipan"],
+  "Batac City": ["Poblacion", "Washington", "Suarez", "Valdez", "Billoca"],
+  Burgos: ["Poblacion", "Tanap", "Buduan", "Bobon", "Naguillan"],
+  Carasi: ["Poblacion", "Angset", "Barbaques"],
+  Curimao: ["Poblacion", "Pias", "Salugan", "Torre", "Lioes"],
+  Dingras: ["Poblacion", "Madamba", "Suyo", "San Francisco", "Bariquir"],
+  Dumalneg: ["Poblacion", "Cabaritan", "Kalaw"],
+  "Laoag City": ["San Jose", "Nuestra Señora de Soledad", "Santa Angela", "Sanquiat", "Zamboanga"],
+  Marcos: ["Poblacion", "Pacifico", "Cacafean", "Imelda", "Santiago"],
+  "Nueva Era": ["Poblacion", "Cabittauran", "Caray", "Garnaden", "Barikir"],
+  Paoay: ["Poblacion", "Sumbilla", "Nangalisan", "Suba", "Bacsil"],
+  Pasuquin: ["Poblacion", "Badaio", "Caruan", "Davila", "Prado"],
+  Piddig: ["Poblacion", "Ab-abut", "Boyboy", "Cabaroan", "Estancia"],
+  Pinili: ["Poblacion", "Badio", "Cabaroan", "Darayday", "Puzol"],
+  "San Nicolas": ["Poblacion", "San Francisco", "San Jose", "San Miguel", "San Agustin"],
+  Sarrat: ["Poblacion", "San Joaquin", "San Roque", "San Francisco", "Santa Maria"],
+  Solsona: ["Poblacion", "Laureta", "Darayday", "Talugtog", "Manalpac"],
+  Vintar: ["Poblacion", "San Jose", "San Nicolas", "Salsalamagui", "Visaya"],
+  PGIN: ["Poblacion", "Capitol"],
+  "District Hostpital": ["Poblacion", "Hospital Ground"],
+  Pagudpud: ["Poblacion", "Baduang", "Balaoi", "Caparispisan", "Pancian", "Saud"]
 };
 
 export const TEAMS = [
@@ -64,6 +75,89 @@ export const TEAMS = [
   "Team 8 (Laoag City)",
   "Team 9 (Office of the Supervising Auditor)"
 ];
+
+
+export type TeamLocationRules = {
+  provinces: string[];
+  municipalities: string[];
+  barangays: string[];
+};
+
+function uniq(arr: string[]) {
+  return Array.from(new Set(arr.filter(Boolean)));
+}
+
+function parseTeamsParenthesisLocations(teamLabel: string): string[] {
+  const match = teamLabel.match(/\(([^)]*)\)/);
+  if (!match) return [];
+  return match[1]
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+const TEAM_TO_RAW_LOCATIONS: Record<string, string[]> = Object.fromEntries(
+  TEAMS.map(t => [t, parseTeamsParenthesisLocations(t)])
+);
+
+// Best-effort mapping into the available dataset.
+// - Treat raw entries as municipalities first.
+// - If a raw municipality exists in MUNICIPALITIES_BY_PROVINCE, then include its province.
+// - If a raw municipality exists, include its barangays.
+// - If raw entries are not found in the dataset, they are ignored (empty rules).
+export const TEAM_LOCATION_RULES: Record<string, TeamLocationRules> = Object.fromEntries(
+  TEAMS.map(team => {
+    const raw = TEAM_TO_RAW_LOCATIONS[team] || [];
+    const allowedMunicipalities = raw.filter(m =>
+      Object.values(MUNICIPALITIES_BY_PROVINCE).some(list => list.includes(m))
+    );
+
+    const allowedProvinces = uniq(
+      allowedMunicipalities.map(m => {
+        const province = Object.entries(MUNICIPALITIES_BY_PROVINCE).find(([, list]) => list.includes(m))?.[0];
+        return province || "";
+      })
+    );
+
+    const allowedBarangays = uniq(
+      allowedMunicipalities.flatMap(m => (BARANGAYS_BY_MUNICIPALITY[m] || []))
+    );
+
+    return [team, { provinces: allowedProvinces, municipalities: allowedMunicipalities, barangays: allowedBarangays }];
+  })
+);
+
+export function getAllowedProvincesForTeam(team: string): string[] {
+  return TEAM_LOCATION_RULES[team]?.provinces ?? [];
+}
+
+export function getAllowedMunicipalitiesForTeam(team: string): string[] {
+  return TEAM_LOCATION_RULES[team]?.municipalities ?? [];
+}
+
+export function getAllowedBarangaysForTeam(team: string): string[] {
+  return TEAM_LOCATION_RULES[team]?.barangays ?? [];
+}
+
+export function isLocationAllowedForTeam(params: {
+  team: string;
+  province: string;
+  municipality: string;
+  barangay: string;
+}): boolean {
+  const { team, province, municipality, barangay } = params;
+  const rules = TEAM_LOCATION_RULES[team];
+  if (!rules) return false;
+
+  const provinceOk = rules.provinces.length === 0 ? true : rules.provinces.includes(province);
+  const muniOk = rules.municipalities.length === 0 ? true : rules.municipalities.includes(municipality);
+  const brgyOk = rules.barangays.length === 0 ? true : rules.barangays.includes(barangay);
+
+  // If rules exist, require hierarchical match where possible.
+  if (!provinceOk || !muniOk || !brgyOk) return false;
+  return true;
+}
+
 
 export const MONTHS: MonthData[] = [
   { key: "01", shortName: "jan", fullName: "January", daysCount: 31 },

@@ -36,7 +36,35 @@ export default function DashboardView({
     "team" | "brgy" | "municipality" | "province"
   >("team");
 
+  // Keep logs of selected year
+  const availableYears = useMemo(() => {
+    const yearsSet = new Set<number>();
+    
+    // Always include a default set of years
+    yearsSet.add(2025);
+    yearsSet.add(2026);
+    yearsSet.add(2027);
+    
+    // Also include selectedYear
+    yearsSet.add(selectedYear);
+    
+    // Also include current year
+    yearsSet.add(new Date().getFullYear());
 
+    // Extract years from existing logs
+    logs.forEach(log => {
+      if (log.date) {
+        const parts = log.date.split("-");
+        const y = parseInt(parts[0], 10);
+        if (!isNaN(y)) {
+          yearsSet.add(y);
+        }
+      }
+    });
+
+    // Return sorted array from lowest to highest
+    return Array.from(yearsSet).sort((a, b) => a - b);
+  }, [logs, selectedYear]);
 
   // Keep logs of selected year
   const yearLogs = useMemo(() => {
@@ -115,9 +143,9 @@ export default function DashboardView({
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-slate-950"
             >
-              <option value={2026}>2026</option>
-              <option value={2025}>2025</option>
-              <option value={2027}>2027</option>
+              {availableYears.map(yr => (
+                <option key={yr} value={yr}>{yr}</option>
+              ))}
             </select>
           </div>
 

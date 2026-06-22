@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { LogEntry } from "../types";
 import { 
   PROVINCES, 
   MUNICIPALITIES_BY_PROVINCE, 
   BARANGAYS_BY_MUNICIPALITY, 
   TEAMS, 
-  generateId 
+  generateId,
+  getAllowedMunicipalitiesForTeam
 } from "../data";
 import { Clock, Plus, Users, MapPin, CheckCircle, ArrowRight, User } from "lucide-react";
 
@@ -29,20 +30,13 @@ export default function LogEntryForm({
   const [team, setTeam] = useState(TEAMS[0] || "");
 
   const [province, setProvince] = useState(PROVINCES[0] || "");
-
   const [municipality, setMunicipality] = useState("");
   const [barangay, setBarangay] = useState("");
   const [contactNumber, setContactNumber] = useState("");
   const [purpose, setPurpose] = useState("");
 
-
   const disableMunicipalityFields = false;
 
-
-
-
-
-  
   const [timeIn, setTimeIn] = useState("08:00");
   const [timeOut, setTimeOut] = useState("");
   const [hasTimeOut, setHasTimeOut] = useState(false);
@@ -50,25 +44,50 @@ export default function LogEntryForm({
   // Status messages
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Sync municipalities on province change
+  // Determine if selected team has location specifics
+  const hasLocationSpecifics = useMemo(() => {
+    return !team.startsWith("Team 1 ") && !team.startsWith("Team 9 ");
+  }, [team]);
+
+  // Allowed municipalities for current team
+  const allowedMunicipalities = useMemo(() => {
+    if (!hasLocationSpecifics) return [];
+    return getAllowedMunicipalitiesForTeam(team);
+  }, [team, hasLocationSpecifics]);
+
+  // Sync municipalities on team or province change
   useEffect(() => {
-    const munis = MUNICIPALITIES_BY_PROVINCE[province] || [];
-    if (munis.length > 0) {
-      setMunicipality(munis[0]);
-    } else {
+    if (!hasLocationSpecifics) {
+      setProvince("");
       setMunicipality("");
+      setBarangay("");
+    } else {
+      setProvince("Ilocos Norte");
+      if (allowedMunicipalities.length > 0) {
+        if (!allowedMunicipalities.includes(municipality)) {
+          setMunicipality(allowedMunicipalities[0]);
+        }
+      } else {
+        setMunicipality("");
+      }
     }
-  }, [province]);
+  }, [team, allowedMunicipalities, hasLocationSpecifics]);
 
   // Sync barangays on municipality change
   useEffect(() => {
+    if (!hasLocationSpecifics) {
+      setBarangay("");
+      return;
+    }
     const brgys = BARANGAYS_BY_MUNICIPALITY[municipality] || [];
     if (brgys.length > 0) {
-      setBarangay(brgys[0]);
+      if (!brgys.includes(barangay)) {
+        setBarangay(brgys[0]);
+      }
     } else {
       setBarangay("");
     }
-  }, [municipality]);
+  }, [municipality, hasLocationSpecifics]);
 
   // Quick fill times
   const handleSetTimeInNow = () => {
@@ -212,7 +231,7 @@ export default function LogEntryForm({
 
             <div>
               <label htmlFor="agent_team" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Assigned Team
+                Select assigned Team
               </label>
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -242,45 +261,43 @@ export default function LogEntryForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
 
-              <div>
+              {hasLocationSpecifics ? (
+                <>
+                  <div>
+                    <label htmlFor="agent_municipality" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                      Municipality
+                    </label>
+                    <select
+                      id="agent_municipality"
+                      value={municipality}
+                      onChange={(e) => setMunicipality(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 cursor-pointer"
+                    >
+                      {allowedMunicipalities.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <label htmlFor="agent_municipality" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                  Municipality
-                </label>
-                <select
-                  id="agent_municipality"
-                  value={municipality}
-                  onChange={(e) => setMunicipality(e.target.value)}
-                  disabled={disableMunicipalityFields}
-                  className={`w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 cursor-pointer ${
-                    disableMunicipalityFields ? "opacity-40 border-slate-200 cursor-not-allowed" : ""
-                  }`}
-
-                >
-                  {(MUNICIPALITIES_BY_PROVINCE[province] || []).map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="agent_brgy" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                  Barangay (Brgy)
-                </label>
-                <input
-                  type="text"
-                  id="agent_brgy"
-                  value={barangay}
-                  onChange={(e) => setBarangay(e.target.value)}
-                  disabled={disableMunicipalityFields}
-                  placeholder="Type barangay"
-                  className={`w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 ${
-                    disableMunicipalityFields ? "opacity-40 border-slate-200 cursor-not-allowed" : ""
-                  }`}
-
-                />
-
-              </div>
+                  <div>
+                    <label htmlFor="agent_brgy" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                      Barangay (Brgy)
+                    </label>
+                    <input
+                      type="text"
+                      id="agent_brgy"
+                      value={barangay}
+                      onChange={(e) => setBarangay(e.target.value)}
+                      placeholder="Type barangay"
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="sm:col-span-2 bg-slate-100/50 border border-dashed border-slate-200 rounded-xl p-3 flex items-center justify-center text-center text-xs text-slate-500 font-sans">
+                  Location specifics are not required or applicable for Team 1 / Team 9
+                </div>
+              )}
 
               <div>
                 <label htmlFor="agent_contact" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
