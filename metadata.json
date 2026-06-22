@@ -1,0 +1,6 @@
+{
+  "name": "Digital Logbook",
+  "description": "An elegant and comprehensive personal digital logbook for logging agents, tracking time-in/time-out, and analyzing monthly attendance records.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
