@@ -11,7 +11,7 @@
 
 ## 🌟 Live Demo
 
-🔗 **Demo:** [https://coa-digital-logbook.vercel.app/]
+🔗 **Demo:** not yet available
 
 ---
 
@@ -44,8 +44,8 @@
 
 ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=JBAlberto.COA---Digital-Logbook)
 
-![Open PRs](https://img.shields.io/github/issues-pr/USERNAME/REPOSITORY)
-![Closed PRs](https://img.shields.io/github/issues-pr-closed/USERNAME/REPOSITORY)
+![Open PRs](https://img.shields.io/github/issues-pr/JBAlberto/COA---Digital-Logbook)
+![Closed PRs](https://img.shields.io/github/issues-pr-closed/JBAlberto/COA---Digital-Logbook)
 
 ---
 
@@ -54,7 +54,7 @@
 ### Clone Repository
 
 ```bash
-git clone https://github.com/USERNAME/REPOSITORY.git
+git clone https://github.com/JBAlberto/COA---Digital-Logbook.git
 cd REPOSITORY
 ```
 
@@ -84,97 +84,9 @@ JWT_SECRET=
 
 ---
 
-## 📂 Project Structure
-
-```text
-project-root/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   ├── services/
-│   └── utils/
-├── public/
-├── tests/
-├── docs/
-└── README.md
-```
-
----
-
-## 🧪 Running Tests
-
-```bash
-npm test
-```
-
----
-
 ## 🏗 CI/CD Status
 
-![Build Status](https://github.com/USERNAME/REPOSITORY/actions/workflows/main.yml/badge.svg)
-
-### Deployment Workflow
-
-- Push to `main`
-- GitHub Actions runs tests
-- Build is generated
-- Application is deployed automatically
-
----
-
-## 📅 Latest Release
-
-![Release](https://img.shields.io/github/v/release/USERNAME/REPOSITORY)
-
-View all releases:
-https://github.com/USERNAME/REPOSITORY/releases
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repository
-2. Create a feature branch
-
-```bash
-git checkout -b feature/amazing-feature
-```
-
-3. Commit changes
-
-```bash
-git commit -m "Add amazing feature"
-```
-
-4. Push branch
-
-```bash
-git push origin feature/amazing-feature
-```
-
-5. Open a Pull Request
-
----
-
-## 📝 Roadmap
-
-- [ ] Feature A
-- [ ] Feature B
-- [ ] Feature C
-- [ ] Mobile Support
-- [ ] API Documentation
-
----
-
-## 💬 Support
-
-If you encounter any issues:
-
-- Open an Issue
-- Submit a Pull Request
-- Contact maintainers
+![Build Status](https://github.com/JBAlberto/COA---Digital-Logbook/actions/workflows/main.yml/badge.svg)
 
 ---
 
@@ -182,13 +94,7 @@ If you encounter any issues:
 
 **Your Name**
 
-GitHub: https://github.com/USERNAME
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
+GitHub: https://github.com/JBAlberto
 
 ---
 
@@ -201,18 +107,3 @@ If you find this project useful:
 🛠 Contribute
 
 ---
-
-### Recent Activity (Auto-Generated)
-
-<!--START_SECTION:activity-->
-<!--END_SECTION:activity-->
-
-### Latest Blog Posts (Optional)
-
-<!-- BLOG-POST-LIST:START -->
-<!-- BLOG-POST-LIST:END -->
-
-### Recent GitHub Commits (Optional)
-
-<!--START_SECTION:commits-->
-<!--END_SECTION:commits-->
