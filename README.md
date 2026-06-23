@@ -21,7 +21,7 @@
 |-----------|------------|
 | Frontend | React + TypeScript, Vite, Tailwind CSS |
 | Backend | Supabase entry |
-| Database | Supabase (PostreSQL) |
+| Database | Supabase (PostgreSQL) |
 | Deployment | Vercel |
 
 ---
