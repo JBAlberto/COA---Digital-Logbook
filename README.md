@@ -19,9 +19,9 @@
 
 | Category | Technology |
 |-----------|------------|
-| Frontend | React, TypeScript |
-| Backend | Node.js, Vite |
-| Database | Supabase |
+| Frontend | React + TypeScript, Vite, Tailwind CSS |
+| Backend | Supabase entry |
+| Database | Supabase (PostreSQL) |
 | Deployment | Vercel |
 
 ---
