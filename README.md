@@ -11,7 +11,7 @@
 
 ## 🌟 Live Demo
 
-🔗 **Demo:** [https://your-demo-url.com](https://coa-digital-logbook.vercel.app/)
+🔗 **Demo:** [https://coa-digital-logbook.vercel.app/]
 
 ---
 
