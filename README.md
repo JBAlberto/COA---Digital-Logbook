@@ -9,20 +9,9 @@
 ![Last Commit](https://img.shields.io/github/last-commit/JBAlberto/COA---Digital-Logbook)
 ![Repo Size](https://img.shields.io/github/repo-size/JBAlberto/COA---Digital-Logbook)
 
-## 📖 Overview
-
-Project Name is designed to help users:
-
-- ✅ Feature One
-- ✅ Feature Two
-- ✅ Feature Three
-- ✅ Feature Four
-
----
-
 ## 🌟 Live Demo
 
-🔗 **Demo:** https://your-demo-url.com
+🔗 **Demo:** [https://your-demo-url.com](https://coa-digital-logbook.vercel.app/)
 
 ---
 
@@ -30,30 +19,30 @@ Project Name is designed to help users:
 
 | Category | Technology |
 |-----------|------------|
-| Frontend | React, Next.js |
-| Backend | Node.js, Express |
-| Database | PostgreSQL |
-| Deployment | Docker, GitHub Actions |
+| Frontend | React, TypeScript |
+| Backend | Node.js, Vite |
+| Database | Supabase |
+| Deployment | Vercel |
 
 ---
 
 ## 📊 Repository Stats
 
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=USERNAME&show_icons=true&theme=tokyonight)
+![GitHub Stats](https://github-readme-stats.vercel.app/api?username=JBAlberto&show_icons=true&theme=tokyonight)
 
-![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=USERNAME&layout=compact&theme=tokyonight)
+![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=JBAlberto&layout=compact&theme=tokyonight)
 
 ---
 
 ## 🔥 Contribution Activity
 
-![GitHub Streak](https://streak-stats.demolab.com?user=USERNAME&theme=tokyonight)
+![GitHub Streak](https://streak-stats.demolab.com?user=JBAlberto&theme=tokyonight)
 
 ---
 
 ## 📈 Project Metrics
 
-![Visitors](https://visitor-badge.laobi.icu/badge?page_id=USERNAME.REPOSITORY)
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=JBAlberto.COA---Digital-Logbook)
 
 ![Open PRs](https://img.shields.io/github/issues-pr/USERNAME/REPOSITORY)
 ![Closed PRs](https://img.shields.io/github/issues-pr-closed/USERNAME/REPOSITORY)
