@@ -1,13 +1,13 @@
-# 🚀 Project Name
+# Digital Logbook System for company use
 
-> Short description of your project and the problem it solves.
+> Records logs of visitors/personel inside the workplace and their purpose
 
-![License](https://img.shields.io/github/license/USERNAME/REPOSITORY)
-![Stars](https://img.shields.io/github/stars/USERNAME/REPOSITORY?style=social)
-![Forks](https://img.shields.io/github/forks/USERNAME/REPOSITORY?style=social)
-![Issues](https://img.shields.io/github/issues/USERNAME/REPOSITORY)
-![Last Commit](https://img.shields.io/github/last-commit/USERNAME/REPOSITORY)
-![Repo Size](https://img.shields.io/github/repo-size/USERNAME/REPOSITORY)
+![License](https://img.shields.io/github/license/JBAlberto/COA---Digital-Logbook)
+![Stars](https://img.shields.io/github/stars/JBAlberto/COA---Digital-Logbook?style=social)
+![Forks](https://img.shields.io/github/forks/JBAlberto/COA---Digital-Logbook?style=social)
+![Issues](https://img.shields.io/github/issues/JBAlberto/COA---Digital-Logbook)
+![Last Commit](https://img.shields.io/github/last-commit/JBAlberto/COA---Digital-Logbook)
+![Repo Size](https://img.shields.io/github/repo-size/JBAlberto/COA---Digital-Logbook)
 
 ## 📖 Overview
 
