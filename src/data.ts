@@ -10,7 +10,6 @@ export const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
     "Bacarra",
     "Badoc",
     "Bangui",
-    "Bnagui", // support the typo in Team 2 label
     "Banna",
     "Batac City",
     "Burgos", 
@@ -36,44 +35,19 @@ export const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
 };
 
 export const BARANGAYS_BY_MUNICIPALITY: Record<string, string[]> = {
-  Adams: ["Poblacion"],
-  Bacarra: ["Poblacion I", "Poblacion II", "San Andres", "Sangil", "Bani"],
-  Badoc: ["Poblacion I", "Poblacion II", "Alogoog", "Ar parenting", "Camanga"],
-  Bangui: ["Poblacion", "Manayon", "Abaca", "Bacsil", "Lanao"],
-  Bnagui: ["Poblacion", "Manayon", "Abaca", "Bacsil", "Lanao"],
-  Banna: ["Poblacion I", "Poblacion II", "Barangobong", "Bomitog", "Carusipan"],
-  "Batac City": ["Poblacion", "Washington", "Suarez", "Valdez", "Billoca"],
-  Burgos: ["Poblacion", "Tanap", "Buduan", "Bobon", "Naguillan"],
-  Carasi: ["Poblacion", "Angset", "Barbaques"],
-  Curimao: ["Poblacion", "Pias", "Salugan", "Torre", "Lioes"],
-  Dingras: ["Poblacion", "Madamba", "Suyo", "San Francisco", "Bariquir"],
-  Dumalneg: ["Poblacion", "Cabaritan", "Kalaw"],
-  "Laoag City": ["San Jose", "Nuestra Señora de Soledad", "Santa Angela", "Sanquiat", "Zamboanga"],
-  Marcos: ["Poblacion", "Pacifico", "Cacafean", "Imelda", "Santiago"],
-  "Nueva Era": ["Poblacion", "Cabittauran", "Caray", "Garnaden", "Barikir"],
-  Paoay: ["Poblacion", "Sumbilla", "Nangalisan", "Suba", "Bacsil"],
-  Pasuquin: ["Poblacion", "Badaio", "Caruan", "Davila", "Prado"],
-  Piddig: ["Poblacion", "Ab-abut", "Boyboy", "Cabaroan", "Estancia"],
-  Pinili: ["Poblacion", "Badio", "Cabaroan", "Darayday", "Puzol"],
-  "San Nicolas": ["Poblacion", "San Francisco", "San Jose", "San Miguel", "San Agustin"],
-  Sarrat: ["Poblacion", "San Joaquin", "San Roque", "San Francisco", "Santa Maria"],
-  Solsona: ["Poblacion", "Laureta", "Darayday", "Talugtog", "Manalpac"],
-  Vintar: ["Poblacion", "San Jose", "San Nicolas", "Salsalamagui", "Visaya"],
-  PGIN: ["Poblacion", "Capitol"],
-  "District Hostpital": ["Poblacion", "Hospital Ground"],
-  Pagudpud: ["Poblacion", "Baduang", "Balaoi", "Caparispisan", "Pancian", "Saud"]
+
 };
 
 export const TEAMS = [
+  " Office of the Supervising Auditor ",
   "Team 1 (PGIN, District Hostpital)",
-  "Team 2 (Pagudpud, Bnagui, Burgos, Pasuquin)",
+  "Team 2 (Pagudpud, Bangui, Burgos, Pasuquin)",
   "Team 3 (Sarrat, Vintar, Carasi, Nueva Era)",
   "Team 4 (Bacarra, San Nicolas, Adams, Dumalneg)",
   "Team 5 (Badoc, Pinili, Piddig, Paoay)",
   "Team 6 (Marcos, Dingras, Solsona, Banna)",
   "Team 7 (Batac City, Curimao)",
-  "Team 8 (Laoag City)",
-  "Team 9 (Office of the Supervising Auditor)"
+  "Team 8 (Laoag City)"
 ];
 
 

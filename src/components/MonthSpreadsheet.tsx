@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, FormEvent, ChangeEvent } from "react";
 import { LogEntry, MonthData } from "../types";
 import { 
   PROVINCES, 
-  MUNICIPALITIES_BY_PROVINCE, 
   BARANGAYS_BY_MUNICIPALITY, 
   TEAMS,
-  getAllowedMunicipalitiesForTeam
+  getAllowedMunicipalitiesForTeam,
+  MUNICIPALITIES_BY_PROVINCE
 } from "../data";
 import { 
   Search, 
@@ -47,7 +47,7 @@ export default function MonthSpreadsheet({
   // Filtering & Search state
   const [search, setSearch] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
-  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedLocationFilter, setSelectedLocationFilter] = useState("");
 
   // Inline editing state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,6 +65,16 @@ export default function MonthSpreadsheet({
   const [quickTimeOut, setQuickTimeOut] = useState("");
   const [quickContactNumber, setQuickContactNumber] = useState("");
   const [quickPurpose, setQuickPurpose] = useState("");
+
+  const [sheetNotification, setSheetNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const triggerNotification = (message: string, type: "success" | "error") => {
+    setSheetNotification({ message, type });
+    setTimeout(() => {
+      setSheetNotification(null);
+    }, 4500);
+  };
 
 
   // Pagination state
@@ -88,11 +98,14 @@ export default function MonthSpreadsheet({
 
   // Dynamic allowed municipalities list for quick-add form
   const quickAllowedMunicipalities = useMemo(() => {
+    if (quickTeam.trim() === "Office of the Supervising Auditor") {
+      return Object.values(MUNICIPALITIES_BY_PROVINCE).flat() as string[];
+    }
     if (!quickHasLocationSpecifics) return [];
     return getAllowedMunicipalitiesForTeam(quickTeam);
   }, [quickTeam, quickHasLocationSpecifics]);
 
-  // Sync quick municipality based on selected team's available options
+  // Sync quick municipality and barangay immediately on team change
   React.useEffect(() => {
     if (!quickHasLocationSpecifics) {
       setQuickProvince("");
@@ -100,31 +113,38 @@ export default function MonthSpreadsheet({
       setQuickBarangay("");
     } else {
       setQuickProvince("Ilocos Norte");
-      if (quickAllowedMunicipalities.length > 0) {
-        if (!quickAllowedMunicipalities.includes(quickMunicipality)) {
-          setQuickMunicipality(quickAllowedMunicipalities[0]);
-        }
+      let allowed = getAllowedMunicipalitiesForTeam(quickTeam);
+      if (quickTeam.trim() === "Office of the Supervising Auditor") {
+        allowed = Object.values(MUNICIPALITIES_BY_PROVINCE).flat() as string[];
+      }
+      if (allowed.length > 0) {
+        const defaultMuni = allowed[0];
+        setQuickMunicipality(defaultMuni);
+        const brgys = BARANGAYS_BY_MUNICIPALITY[defaultMuni] || [];
+        setQuickBarangay(brgys[0] || "");
       } else {
         setQuickMunicipality("");
+        setQuickBarangay("");
       }
     }
-  }, [quickTeam, quickAllowedMunicipalities, quickHasLocationSpecifics]);
+  }, [quickTeam, quickHasLocationSpecifics]);
 
-  // Sync quick barangay based on selected Quick Municipality change
+  // Sync quick barangay immediately when municipality changes manually (but allow manual typing overwrite)
   React.useEffect(() => {
-    if (!quickHasLocationSpecifics) {
-      setQuickBarangay("");
-      return;
-    }
+    if (!quickHasLocationSpecifics) return;
     const brgys = BARANGAYS_BY_MUNICIPALITY[quickMunicipality] || [];
-    if (brgys.length > 0) {
-      if (!brgys.includes(quickBarangay)) {
-        setQuickBarangay(brgys[0]);
-      }
-    } else {
-      setQuickBarangay("");
-    }
+    setQuickBarangay(brgys[0] || "");
   }, [quickMunicipality, quickHasLocationSpecifics]);
+
+  // Get all unique municipalities with data recorded for this month
+  const uniqueMunicipalities = useMemo(() => {
+    return Array.from(new Set(filteredMonthLogs.map(l => l.municipality).filter(Boolean))).sort();
+  }, [filteredMonthLogs]);
+
+  // Get all unique barangays with data recorded for this month
+  const uniqueBarangays = useMemo(() => {
+    return Array.from(new Set(filteredMonthLogs.map(l => l.brgy).filter(Boolean))).sort();
+  }, [filteredMonthLogs]);
 
   // Filtered array based on Search and Selected criteria
   const finalDisplayLogs = useMemo(() => {
@@ -134,11 +154,32 @@ export default function MonthSpreadsheet({
                             log.municipality.toLowerCase().includes(search.toLowerCase());
       
       const matchesTeam = selectedTeam === "" || log.team === selectedTeam;
-      const matchesProvince = selectedProvince === "" || log.province === selectedProvince;
 
-      return matchesSearch && matchesTeam && matchesProvince;
+      let matchesLocationValue = true;
+      if (selectedLocationFilter) {
+        const isMuniOnly = log.municipality && (!log.brgy || log.brgy.trim() === "");
+        const isSK = log.brgy && log.brgy.toLowerCase().includes("sk");
+        const isOthers = log.brgy && log.brgy.toLowerCase().includes("others");
+        const isBrgyOnly = log.municipality && log.brgy && log.brgy.trim() !== "" && !log.brgy.toLowerCase().includes("sk") && !log.brgy.toLowerCase().includes("others");
+
+        if (selectedLocationFilter === "municipality") {
+          matchesLocationValue = !!isMuniOnly;
+        } else if (selectedLocationFilter === "barangay") {
+          matchesLocationValue = !!isBrgyOnly;
+        } else if (selectedLocationFilter === "sk") {
+          matchesLocationValue = !!isSK;
+        } else if (selectedLocationFilter === "others") {
+          matchesLocationValue = !!isOthers;
+        }
+      }
+
+      return (
+        matchesSearch &&
+        matchesTeam &&
+        matchesLocationValue
+      );
     }).sort((a, b) => b.date.localeCompare(a.date) || b.timeIn.localeCompare(a.timeIn));
-  }, [filteredMonthLogs, search, selectedTeam, selectedProvince]);
+  }, [filteredMonthLogs, search, selectedTeam, selectedLocationFilter]);
 
   // Paginated display
   const paginatedLogs = useMemo(() => {
@@ -195,7 +236,7 @@ export default function MonthSpreadsheet({
   };
 
   // Import JSON handler
-  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportJSON = (e: ChangeEvent<HTMLInputElement>) => {
     const fileReader = new FileReader();
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -213,15 +254,15 @@ export default function MonthSpreadsheet({
           );
           if (isValidFormat) {
             onImportLogs(parsed);
-            alert(`Logbook loaded successfully! Integrated ${parsed.length} items.`);
+            triggerNotification(`Logbook loaded successfully! Integrated ${parsed.length} items.`, "success");
           } else {
-            alert("File schema is invalid. Missing critical attributes.");
+            triggerNotification("File schema is invalid. Missing critical attributes.", "error");
           }
         } else {
-          alert("Selected file does not contain a valid JSON Array.");
+          triggerNotification("Selected file does not contain a valid JSON Array.", "error");
         }
       } catch (err) {
-        alert("Failed to parse JSON file. Ensure file is correctly formatted.");
+        triggerNotification("Failed to parse JSON file. Ensure file is correctly formatted.", "error");
       }
     };
   };
@@ -233,23 +274,84 @@ export default function MonthSpreadsheet({
   };
 
   const handleSaveEdit = () => {
-    if (editForm.name && editForm.timeIn && editingId) {
-      if (editForm.timeOut && editForm.timeOut < editForm.timeIn) {
-        alert("Time-Out cannot be prior to Time-In");
+    if (!editForm.name?.trim()) {
+      triggerNotification("Name is required.", "error");
+      return;
+    }
+    const hasLoc = editForm.team ? (!editForm.team.startsWith("Team 1 ") && !editForm.team.startsWith("Team 9 ")) : false;
+    if (hasLoc) {
+      if (!editForm.municipality?.trim()) {
+        triggerNotification("Municipality is required.", "error");
         return;
       }
+      if (!editForm.brgy?.trim()) {
+        triggerNotification("Barangay is required.", "error");
+        return;
+      }
+    }
+    if (!editForm.contactNumber?.trim()) {
+      triggerNotification("Contact Number is required.", "error");
+      return;
+    }
+    if (editForm.contactNumber.trim().length !== 11) {
+      triggerNotification("Contact Number must be exactly 11 digits (e.g. 09XXXXXXXXX).", "error");
+      return;
+    }
+    if (!editForm.purpose?.trim()) {
+      triggerNotification("Purpose of visit is required.", "error");
+      return;
+    }
+    if (!editForm.timeIn) {
+      triggerNotification("Time-In is required.", "error");
+      return;
+    }
+    if (editForm.timeOut && editForm.timeOut < editForm.timeIn) {
+      triggerNotification("Time-Out cannot be prior to Time-In.", "error");
+      return;
+    }
+
+    if (editingId) {
       onUpdateLog(editForm as LogEntry);
       setEditingId(null);
-    } else {
-      alert("Please complete name and checking-in fields.");
+      triggerNotification("Record updated successfully!", "success");
     }
   };
 
 
-  const handleAddQuickLog = (e: React.FormEvent) => {
+  const handleAddQuickLog = (e: FormEvent) => {
     e.preventDefault();
     if (!quickName.trim()) {
-      alert("Name is required");
+      triggerNotification("Agent Name is required.", "error");
+      return;
+    }
+    if (quickHasLocationSpecifics) {
+      if (!quickMunicipality) {
+        triggerNotification("Municipality occupies a required state.", "error");
+        return;
+      }
+      if (!quickBarangay) {
+        triggerNotification("Barangay occupies a required state.", "error");
+        return;
+      }
+    }
+    if (!quickContactNumber.trim()) {
+      triggerNotification("Contact number is required.", "error");
+      return;
+    }
+    if (quickContactNumber.trim().length !== 11) {
+      triggerNotification("Contact number must be exactly 11 digits (e.g., 09XXXXXXXXX).", "error");
+      return;
+    }
+    if (!quickPurpose.trim()) {
+      triggerNotification("Purpose is required.", "error");
+      return;
+    }
+    if (!quickTimeIn) {
+      triggerNotification("Time-In is required.", "error");
+      return;
+    }
+    if (quickTimeOut && quickTimeOut < quickTimeIn) {
+      triggerNotification("Time-Out cannot be prior to Time-In.", "error");
       return;
     }
 
@@ -277,11 +379,36 @@ export default function MonthSpreadsheet({
     setQuickContactNumber("");
     setQuickPurpose("");
     setShowQuickAdd(false);
-
+    triggerNotification("Successfully inserted attendance log record!", "success");
   };
 
   return (
     <div id="month_spreadsheet_wrapper" className="bg-white rounded-2xl shadow-xs border border-slate-100 p-6 md:p-8 space-y-6">
+      
+      {sheetNotification && (
+        <div 
+          id="sheet_notification_banner"
+          className={`p-3.5 rounded-xl border text-sm flex items-center gap-2.5 transition-all ${
+            sheetNotification.type === "success" 
+              ? "bg-emerald-50 border-emerald-100 text-emerald-800 animate-slide-in" 
+              : "bg-rose-50 border-rose-100 text-rose-800 animate-shake"
+          }`}
+        >
+          <div className="flex-1 flex items-center gap-2">
+            <span className="font-sans font-semibold">
+              {sheetNotification.type === "success" ? "✓ SUCCESS:" : "⚠ ERROR:"}
+            </span>
+            <span className="font-sans text-slate-700">{sheetNotification.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSheetNotification(null)}
+            className="text-slate-400 hover:text-slate-650 cursor-pointer p-0.5 rounded"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       
       {/* Header bar mirroring hand-drawn design: Title with selected month info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-5 gap-4">
@@ -350,32 +477,35 @@ export default function MonthSpreadsheet({
 
         {/* Filters Grid */}
         <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+          {/* Team Filter - Separated */}
           <div className="relative">
             <select
               value={selectedTeam}
               onChange={(e) => setSelectedTeam(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 text-left appearance-none cursor-pointer font-sans"
             >
-              <option value="">Filter: All Teams</option>
+              <option value="">Filter by Team: All</option>
               {TEAMS.map(team => (
                 <option key={team} value={team}>{team}</option>
               ))}
             </select>
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-450 text-[10px]">▼</div>
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</div>
           </div>
 
+          {/* Unified Location Filter (Combines Municipality, Barangay, and SK) */}
           <div className="relative">
             <select
-              value={selectedProvince}
-              onChange={(e) => setSelectedProvince(e.target.value)}
+              value={selectedLocationFilter}
+              onChange={(e) => setSelectedLocationFilter(e.target.value)}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 text-left appearance-none cursor-pointer font-sans"
             >
-              <option value="">Filter: All Provinces</option>
-              {PROVINCES.map(prov => (
-                <option key={prov} value={prov}>{prov}</option>
-              ))}
+              <option value="">Filter by: All</option>
+              <option value="municipality">by Municipality/City</option>
+              <option value="barangay">Barangay</option>
+              <option value="sk">Brgy SK</option>
+              <option value="others">Others</option>
             </select>
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-450 text-[10px]">▼</div>
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</div>
           </div>
         </div>
 
@@ -394,7 +524,7 @@ export default function MonthSpreadsheet({
 
       {/* Quick Add Form Row (Inline Expansion) */}
       {showQuickAdd && (
-        <form onSubmit={handleAddQuickLog} className="bg-slate-50 border border-slate-200 p-4 rounded-xl grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
+        <form onSubmit={handleAddQuickLog} className="bg-slate-50 border border-slate-200 p-4 rounded-xl grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-10 gap-3 items-end">
           <div>
             <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Day</label>
             <select
@@ -409,7 +539,7 @@ export default function MonthSpreadsheet({
           </div>
 
           <div className="sm:col-span-2 md:col-span-1">
-            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Agent Name</label>
+            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Agent Name <span className="text-rose-500">*</span></label>
             <input
               type="text"
               placeholder="e.g. Juan dela Cruz"
@@ -449,7 +579,7 @@ export default function MonthSpreadsheet({
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Municipality</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Municipality <span className="text-rose-500">*</span></label>
                 <select
                   value={quickMunicipality}
                   onChange={(e) => setQuickMunicipality(e.target.value)}
@@ -462,16 +592,15 @@ export default function MonthSpreadsheet({
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Barangay (Brgy)</label>
-                <select
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Barangay <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  placeholder="e.g. San Francisco"
                   value={quickBarangay}
                   onChange={(e) => setQuickBarangay(e.target.value)}
-                  className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
-                >
-                  {(BARANGAYS_BY_MUNICIPALITY[quickMunicipality] || ["Poblacion"]).map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
+                  required
+                  className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
               </div>
             </>
           ) : (
@@ -484,7 +613,36 @@ export default function MonthSpreadsheet({
           )}
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Time In</label>
+            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Contact No. <span className="text-rose-500">*</span></label>
+            <input
+              type="tel"
+              inputMode="tel"
+              placeholder="e.g. 09XXXXXXXXX"
+              value={quickContactNumber}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                setQuickContactNumber(digits);
+              }}
+              required
+              pattern="09[0-9]{9}"
+              className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Purpose <span className="text-rose-500">*</span></label>
+            <input
+              type="text"
+              placeholder="e.g. Field visit"
+              value={quickPurpose}
+              onChange={(e) => setQuickPurpose(e.target.value)}
+              required
+              className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Time In <span className="text-rose-500">*</span></label>
             <input
               type="time"
               value={quickTimeIn}
@@ -581,12 +739,16 @@ export default function MonthSpreadsheet({
                             onChange={(e) => {
                               const selected = e.target.value;
                               const isNoLoc = selected.startsWith("Team 1 ") || selected.startsWith("Team 9 ");
+                              const allowed = getAllowedMunicipalitiesForTeam(selected);
+                              const defaultMuni = allowed.length > 0 ? allowed[0] : "";
+                              const brgys = BARANGAYS_BY_MUNICIPALITY[defaultMuni] || [];
+                              const defaultBrgy = brgys.length > 0 ? brgys[0] : "";
                               setEditForm({
                                 ...editForm,
                                 team: selected,
-                                province: isNoLoc ? "" : (editForm.province || "Ilocos Norte"),
-                                municipality: isNoLoc ? "" : (editForm.municipality || ""),
-                                brgy: isNoLoc ? "" : (editForm.brgy || "")
+                                province: isNoLoc ? "" : "Ilocos Norte",
+                                municipality: isNoLoc ? "" : defaultMuni,
+                                brgy: isNoLoc ? "" : defaultBrgy
                               });
                             }}
                             className="bg-white border border-slate-300 rounded p-1 text-[11px] w-full"
@@ -714,28 +876,49 @@ export default function MonthSpreadsheet({
                         )}
                       </td>
                       <td className="px-4 py-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(log)}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 p-1.5 rounded transition-all cursor-pointer"
-                            title="Edit row details"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm(`Delete attendance log for ${log.name}? This is permanent.`)) {
+                        {deleteConfirmId === log.id ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
                                 onDeleteLog(log.id);
-                              }
-                            }}
-                            className="bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 p-1.5 rounded transition-all cursor-pointer"
-                            title="Delete record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                                setDeleteConfirmId(null);
+                                triggerNotification(`Successfully deleted log for ${log.name}!`, "success");
+                              }}
+                              className="bg-rose-600 hover:bg-rose-700 text-white text-[10px] sm:text-[11px] font-bold px-2 py-1 rounded cursor-pointer transition-colors"
+                              title="Confirm row deletion"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmId(null)}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] sm:text-[11px] font-bold px-2 py-1 rounded cursor-pointer transition-colors"
+                              title="Cancel deletion"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(log)}
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 p-1.5 rounded transition-all cursor-pointer"
+                              title="Edit row details"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmId(log.id)}
+                              className="bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 p-1.5 rounded transition-all cursor-pointer"
+                              title="Delete record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -753,7 +936,7 @@ export default function MonthSpreadsheet({
               <button
                 type="button"
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
                 className="bg-white border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 text-slate-800 rounded px-2.5 py-1 text-[11px] font-bold cursor-pointer"
               >
                 Previous
@@ -761,7 +944,7 @@ export default function MonthSpreadsheet({
               <button
                 type="button"
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
                 className="bg-white border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 text-slate-800 rounded px-2.5 py-1 text-[11px] font-bold cursor-pointer"
               >
                 Next

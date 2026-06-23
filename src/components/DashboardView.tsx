@@ -69,7 +69,9 @@ export default function DashboardView({
   // Keep logs of selected year
   const yearLogs = useMemo(() => {
     return logs.filter(log => {
-      const year = new Date(log.date).getFullYear();
+      if (!log.date) return false;
+      const parts = log.date.split("-");
+      const year = parseInt(parts[0], 10);
       return year === selectedYear;
     });
   }, [logs, selectedYear]);
@@ -182,7 +184,11 @@ export default function DashboardView({
                     const [, mm] = log.date.split("-");
                     return mm === m.key;
                   })
-                  .map((log) => new Date(log.date).getFullYear());
+                  .map((log) => {
+                    if (!log.date) return 0;
+                    const parts = log.date.split("-");
+                    return parseInt(parts[0], 10);
+                  });
 
                 return years.length > 0 ? Math.max(...years) : selectedYear;
               })();
