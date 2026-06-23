@@ -26,20 +26,6 @@
 
 ---
 
-## 📊 Repository Stats
-
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=JBAlberto&show_icons=true&theme=tokyonight)
-
-![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=JBAlberto&layout=compact&theme=tokyonight)
-
----
-
-## 🔥 Contribution Activity
-
-![GitHub Streak](https://streak-stats.demolab.com?user=JBAlberto&theme=tokyonight)
-
----
-
 ## 📈 Project Metrics
 
 ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=JBAlberto.COA---Digital-Logbook)
