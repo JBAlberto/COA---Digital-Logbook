@@ -6,7 +6,8 @@ import {
   BARANGAYS_BY_MUNICIPALITY, 
   TEAMS, 
   generateId,
-  getAllowedMunicipalitiesForTeam
+  getAllowedMunicipalitiesForTeam,
+  getTeamDisplayLabel
 } from "../data";
 import { Clock, Plus, Users, MapPin, CheckCircle, ArrowRight, User } from "lucide-react";
 
@@ -16,6 +17,7 @@ interface LogEntryFormProps {
   onQuickLogOut: (id: string, time: string) => void;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
+  teamLocations?: Record<string, string[]>;
 }
 
 export default function LogEntryForm({ 
@@ -23,7 +25,8 @@ export default function LogEntryForm({
   todayLogs, 
   onQuickLogOut,
   selectedDate,
-  setSelectedDate
+  setSelectedDate,
+  teamLocations
 }: LogEntryFormProps) {
   // Form fields
   const [name, setName] = useState("");
@@ -36,7 +39,7 @@ export default function LogEntryForm({
   const [purpose, setPurpose] = useState(" ");
   const [customPurpose, setCustomPurpose] = useState("");
 
-  type LocationMode = "municipality" | "sk" | "barangay" | "others";
+  type LocationMode = "province" | "municipality" | "sk" | "barangay" | "others";
   const [locationMode, setLocationMode] = useState<LocationMode>("municipality");
 
   const [easyMode, setEasyMode] = useState(true);
@@ -61,8 +64,11 @@ export default function LogEntryForm({
     }
 
     if (!hasLocationSpecifics) return [];
+    if (teamLocations && teamLocations[team]) {
+      return teamLocations[team];
+    }
     return getAllowedMunicipalitiesForTeam(team);
-  }, [team, hasLocationSpecifics]);
+  }, [team, hasLocationSpecifics, teamLocations]);
 
   // Sync municipalities and barangays immediately on team change
   useEffect(() => {
@@ -76,14 +82,17 @@ export default function LogEntryForm({
 
     setProvince("Ilocos Norte");
 
-    let allowed = getAllowedMunicipalitiesForTeam(team);
+    let allowed = teamLocations && teamLocations[team] ? teamLocations[team] : getAllowedMunicipalitiesForTeam(team);
     if (team.trim() === "Office of the Supervising Auditor") {
       allowed = Object.values(MUNICIPALITIES_BY_PROVINCE).flat();
     }
     const defaultMuni = allowed.length > 0 ? allowed[0] : "";
 
     // Only auto-set enabled fields based on current locationMode
-    if (locationMode === "municipality") {
+    if (locationMode === "province") {
+      setMunicipality("");
+      setBarangay("");
+    } else if (locationMode === "municipality") {
       setMunicipality(defaultMuni);
       const brgys = defaultMuni ? BARANGAYS_BY_MUNICIPALITY[defaultMuni] || [] : [];
       setBarangay(brgys[0] || "");
@@ -97,7 +106,7 @@ export default function LogEntryForm({
       // others: allow arbitrary text typing in barangay field
       setBarangay(prev => (prev ? prev : ""));
     }
-  }, [team, hasLocationSpecifics, locationMode]);
+  }, [team, hasLocationSpecifics, locationMode, teamLocations]);
 
 
   // When municipality is active, update barangay helper default (if barangay currently empty)
@@ -115,6 +124,12 @@ export default function LogEntryForm({
   // Enforce disabling/clearing rules when locationMode changes
   useEffect(() => {
     if (!hasLocationSpecifics) return;
+
+    if (locationMode === "province") {
+      setMunicipality("");
+      setBarangay("");
+      return;
+    }
 
     if (locationMode === "municipality") {
       // Municipality enabled; Barangay should be enabled
@@ -161,7 +176,12 @@ export default function LogEntryForm({
 
     if (hasLocationSpecifics) {
       // Requirements depend on selected radio choice
-      if (locationMode === "municipality") {
+      if (locationMode === "province") {
+        if (!province) {
+          setNotification({ message: "Please select a province", type: "error" });
+          return;
+        }
+      } else if (locationMode === "municipality") {
         if (!municipality) {
           setNotification({ message: "Please select a municipality", type: "error" });
           return;
@@ -212,7 +232,9 @@ export default function LogEntryForm({
     // Dynamic categorization of the location spec in the brgy column
     let finalBrgy = "";
     if (hasLocationSpecifics) {
-      if (locationMode === "municipality") {
+      if (locationMode === "province") {
+        finalBrgy = "";
+      } else if (locationMode === "municipality") {
         finalBrgy = "";
       } else if (locationMode === "sk") {
         const cleaned = barangay.trim();
@@ -237,7 +259,7 @@ export default function LogEntryForm({
       name: name.trim(),
       team,
       brgy: finalBrgy,
-      municipality: hasLocationSpecifics ? municipality : "",
+      municipality: (hasLocationSpecifics && locationMode !== "province") ? municipality : "",
       province: hasLocationSpecifics ? province : "",
       contactNumber: contactNumber.trim(),
       purpose: finalPurpose,
@@ -307,7 +329,7 @@ export default function LogEntryForm({
             }`}
           >
             <span className="text-base"></span>
-            <span>Simple Mode</span>
+            <span>Detailed Mode</span>
           </button>
           <button
             type="button"
@@ -411,7 +433,7 @@ export default function LogEntryForm({
                       className="w-full bg-white border-2 border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm sm:text-base text-slate-900 focus:outline-none focus:border-slate-800 cursor-pointer appearance-none font-medium text-slate-800"
                     >
                       {TEAMS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
+                        <option key={t} value={t}>{getTeamDisplayLabel(t, teamLocations)}</option>
                       ))}
                     </select>
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">▼</div>
@@ -425,11 +447,29 @@ export default function LogEntryForm({
                 <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="bg-slate-900 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">3</span>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Specifics</h3>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Agency</h3>
                   </div>
 
+                  <p className="text-xs text-slate-600 font-sans leading-normal">
+                    Where is your agency located? Tap one option below:
+                  </p>
+
                   {/* HUGE TAP CARDS for Location Mode */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setLocationMode("province")}
+                      className={`p-4 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                        locationMode === "province"
+                          ? "bg-slate-900 border-slate-900 text-white shadow-sm"
+                          : "bg-white border-slate-200 text-slate-700 hover:border-slate-350"
+                      }`}
+                    >
+                      <span className="block text-lg mb-1">🗺️</span>
+                      <span className="text-xs sm:text-sm font-bold block">Province</span>
+                      <span className="text-[9px] opacity-75 hidden sm:block">Province Level</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => setLocationMode("municipality")}
@@ -486,43 +526,66 @@ export default function LogEntryForm({
 
                   {/* Child inputs with spacious layouts */}
                   <div className="bg-white border border-slate-200 rounded-xl p-4.5 space-y-4">
-                    <div>
-                      <label htmlFor="easy_agent_muni" className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
-                        Select Municipality/City <span className="text-rose-500">{locationMode === "municipality" ? "*" : ""}</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          id="easy_agent_muni"
-                          value={municipality}
-                          onChange={(e) => setMunicipality(e.target.value)}
-                          required={locationMode === "municipality"}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-850 cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-800"
-                        >
-                          {locationMode === "others" && (
-                            <option value="">N/A - Others / Unlisted</option>
-                          )}
-                          {allowedMunicipalities.map((m) => (
-                            <option key={m} value={m}>{m}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {locationMode !== "municipality" && (
+                    {locationMode === "province" ? (
                       <div>
-                        <label htmlFor="easy_agent_brgy" className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
-                          {locationMode === "others" ? "Other Location Details" : "Name of Barangay"} <span className="text-rose-500">*</span>
+                        <label htmlFor="easy_agent_province" className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+                          Select Province <span className="text-rose-500">*</span>
                         </label>
-                        <input
-                          type="text"
-                          id="easy_agent_brgy"
-                          value={barangay}
-                          onChange={(e) => setBarangay(e.target.value)}
-                          placeholder={locationMode === "others" ? "e.g. Multi-barangay, Provincial Hall, Main Depot" : "e.g. Barangay 5, San Francisco"}
-                          required
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-850 focus:outline-none focus:ring-1 focus:ring-slate-800"
-                        />
+                        <div className="relative">
+                          <select
+                            id="easy_agent_province"
+                            value={province}
+                            onChange={(e) => setProvince(e.target.value)}
+                            required
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-850 cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-800"
+                          >
+                            {PROVINCES.map((p) => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label htmlFor="easy_agent_muni" className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+                            Select Municipality/City <span className="text-rose-500">{locationMode === "municipality" ? "*" : ""}</span>
+                          </label>
+                          <div className="relative">
+                            <select
+                              id="easy_agent_muni"
+                              value={municipality}
+                              onChange={(e) => setMunicipality(e.target.value)}
+                              required={locationMode === "municipality"}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-850 cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-800"
+                            >
+                              {locationMode === "others" && (
+                                <option value="">N/A - Others / Unlisted</option>
+                              )}
+                              {allowedMunicipalities.map((m) => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {locationMode !== "municipality" && (
+                          <div>
+                            <label htmlFor="easy_agent_brgy" className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+                              {locationMode === "others" ? "Other Location Details" : "Name of Barangay"} <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              id="easy_agent_brgy"
+                              value={barangay}
+                              onChange={(e) => setBarangay(e.target.value)}
+                              placeholder={locationMode === "others" ? "e.g. Multi-barangay, Provincial Hall, Main Depot" : "e.g. Barangay 5, San Francisco"}
+                              required
+                              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-850 focus:outline-none focus:ring-1 focus:ring-slate-800"
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -623,7 +686,7 @@ export default function LogEntryForm({
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9.5 pr-4 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-950 appearance-none cursor-pointer"
                     >
                       {TEAMS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
+                        <option key={t} value={t}>{getTeamDisplayLabel(t, teamLocations)}</option>
                       ))}
                     </select>
                   </div>
@@ -641,7 +704,23 @@ export default function LogEntryForm({
                   {hasLocationSpecifics ? (
                     <>
                       <div className="sm:col-span-2">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                          <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs cursor-pointer ${
+                            locationMode === "province"
+                              ? "bg-white border-slate-205"
+                              : "bg-slate-50 border-slate-200"
+                          }`}>
+                            <input
+                              type="radio"
+                              name="locationMode"
+                              value="province"
+                              checked={locationMode === "province"}
+                              onChange={() => setLocationMode("province")}
+                              className="accent-slate-950"
+                            />
+                            <span className="font-bold text-slate-700">Province</span>
+                          </label>
+
                           <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs cursor-pointer ${
                             locationMode === "municipality"
                               ? "bg-white border-slate-205"
@@ -708,45 +787,66 @@ export default function LogEntryForm({
                         </div>
                       </div>
 
-                      <div>
-                        <label htmlFor="agent_municipality" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                          Municipality <span className="text-rose-500">{locationMode === "municipality" ? "*" : ""}</span>
-                        </label>
-                        <select
-                          id="agent_municipality"
-                          value={municipality}
-                          onChange={(e) => setMunicipality(e.target.value)}
-                          required={locationMode === "municipality"}
-                          className="w-full rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 cursor-pointer border bg-white border-slate-200"
-                        >
-                          {locationMode === "others" && (
-                            <option value="">N/A - Others</option>
-                          )}
-                          {allowedMunicipalities.map((m) => (
-                            <option key={m} value={m}>{m}</option>
-                          ))}
-                        </select>
-                      </div>
+                      {locationMode === "province" ? (
+                        <div className="sm:col-span-2">
+                          <label htmlFor="agent_province" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                            Province <span className="text-rose-500">*</span>
+                          </label>
+                          <select
+                            id="agent_province"
+                            value={province}
+                            onChange={(e) => setProvince(e.target.value)}
+                            required
+                            className="w-full rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 cursor-pointer border bg-white border-slate-200"
+                          >
+                            {PROVINCES.map((p) => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <label htmlFor="agent_municipality" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Municipality <span className="text-rose-500">{locationMode === "municipality" ? "*" : ""}</span>
+                            </label>
+                            <select
+                              id="agent_municipality"
+                              value={municipality}
+                              onChange={(e) => setMunicipality(e.target.value)}
+                              required={locationMode === "municipality"}
+                              className="w-full rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 cursor-pointer border bg-white border-slate-200"
+                            >
+                              {locationMode === "others" && (
+                                <option value="">N/A - Others</option>
+                              )}
+                              {allowedMunicipalities.map((m) => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                          </div>
 
-                      <div>
-                        <label htmlFor="agent_brgy" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                          {locationMode === "others" ? "Other Location Details" : "Barangay (Brgy)"} <span className="text-rose-500">{locationMode !== "municipality" ? "*" : ""}</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="agent_brgy"
-                          value={barangay}
-                          onChange={(e) => setBarangay(e.target.value)}
-                          placeholder={locationMode === "others" ? "e.g. Multi-barangay, provincial office, etc." : "e.g. Brgy. 1, San Francisco"}
-                          required={locationMode !== "municipality"}
-                          disabled={locationMode === "municipality"}
-                          className={`w-full rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 border ${
-                            locationMode === "municipality"
-                              ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
-                              : "bg-white border-slate-200"
-                          }`}
-                        />
-                      </div>
+                          <div>
+                            <label htmlFor="agent_brgy" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              {locationMode === "others" ? "Other Location Details" : "Barangay (Brgy)"} <span className="text-rose-500">{locationMode !== "municipality" ? "*" : ""}</span>
+                            </label>
+                            <input
+                              type="text"
+                              id="agent_brgy"
+                              value={barangay}
+                              onChange={(e) => setBarangay(e.target.value)}
+                              placeholder={locationMode === "others" ? "e.g. Multi-barangay, provincial office, etc." : "e.g. Brgy. 1, San Francisco"}
+                              required={locationMode !== "municipality"}
+                              disabled={locationMode === "municipality"}
+                              className={`w-full rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 border ${
+                                locationMode === "municipality"
+                                  ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                                  : "bg-white border-slate-200"
+                              }`}
+                            />
+                          </div>
+                        </>
+                      )}
                     </>
                   ) : (
                     <div className="sm:col-span-2 bg-slate-100/50 border border-dashed border-slate-200 rounded-xl p-3 flex items-center justify-center text-center text-xs text-slate-500 font-sans">

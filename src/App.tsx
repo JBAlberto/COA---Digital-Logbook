@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { LogEntry, ViewState, MonthData } from "./types";
-import { MONTHS, generateId } from "./data";
+import { MONTHS, generateId, DEFAULT_TEAM_LOCATIONS } from "./data";
 import LogEntryForm from "./components/LogEntryForm";
 import DashboardView from "./components/DashboardView";
 import MonthSpreadsheet from "./components/MonthSpreadsheet";
@@ -29,6 +29,20 @@ import {
 export default function App() {
   // State Initialization
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [teamLocations, setTeamLocations] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem("digital_logbook_team_locations");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          return { ...DEFAULT_TEAM_LOCATIONS, ...parsed };
+        }
+      }
+    } catch (e) {
+      console.warn("localStorage team locations load failed", e);
+    }
+    return DEFAULT_TEAM_LOCATIONS;
+  });
   const [currentView, setCurrentView] = useState<ViewState>("entry");
 
   // Supabase Integration States
@@ -107,6 +121,77 @@ export default function App() {
     }
   };
 
+  // Fetch team locations from Supabase
+  const fetchTeamLocations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "team_locations")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data && data.value) {
+        const parsed = JSON.parse(data.value);
+        if (parsed && typeof parsed === "object") {
+          const merged = { ...DEFAULT_TEAM_LOCATIONS, ...parsed };
+          setTeamLocations(merged);
+          try {
+            localStorage.setItem("digital_logbook_team_locations", JSON.stringify(merged));
+          } catch (e) {}
+        }
+      }
+    } catch (err) {
+      console.warn("Could not retrieve custom team location rules:", err);
+    }
+  };
+
+  const handleUpdateTeamLocations = async (updated: Record<string, string[]>) => {
+    setTeamLocations(updated);
+    try {
+      localStorage.setItem("digital_logbook_team_locations", JSON.stringify(updated));
+    } catch (e) {}
+
+    // Find if any existing logs need their team field updated to match the reshuffled location rules
+    const updatedLogs = logs.map(log => {
+      if (log.municipality && log.municipality.trim() !== "") {
+        // Find which team currently contains this municipality
+        const newTeam = Object.keys(updated).find(teamKey => 
+          (updated[teamKey] || []).includes(log.municipality)
+        );
+        const isLocationalTeam = log.team && !log.team.startsWith("Team 1 ") && !log.team.startsWith("Team 9 ");
+        if (newTeam && isLocationalTeam && log.team !== newTeam) {
+          return { ...log, team: newTeam };
+        }
+      }
+      return log;
+    });
+
+    const changedLogs = updatedLogs.filter((log, idx) => log.team !== logs[idx].team);
+    if (changedLogs.length > 0) {
+      saveLogsLocally(updatedLogs);
+      // Bulk update changes in Supabase
+      try {
+        const { error: bulkError } = await supabase
+          .from("attendance_logs")
+          .upsert(changedLogs);
+        if (bulkError) throw bulkError;
+      } catch (dbErr) {
+        console.error("Error updating team assignments for logs in Supabase:", dbErr);
+      }
+    }
+
+    try {
+      const { error } = await supabase
+        .from("admin_settings")
+        .upsert({ key: "team_locations", value: JSON.stringify(updated) });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error saving team locations to Supabase:", err);
+    }
+  };
+
   // Load logs on mount
   useEffect(() => {
     // Initial load from local storage to keep it responsive (Offline-first / cached)
@@ -120,6 +205,7 @@ export default function App() {
     }
 
     fetchLogs();
+    fetchTeamLocations();
   }, []);
 
   // Sync state to local storage (As backup / helper)
@@ -676,6 +762,7 @@ export default function App() {
                 onQuickLogOut={handleQuickLogOut}
                 selectedDate={selectedDate}
                 setSelectedDate={setSelectedDate}
+                teamLocations={teamLocations}
               />
             </motion.div>
           )}
@@ -705,6 +792,8 @@ export default function App() {
                     setCurrentView("spreadsheet"); // Downward arrow target
                   }}
                   onSeedData={handleSeedFullYear}
+                  teamLocations={teamLocations}
+                  onUpdateTeamLocations={handleUpdateTeamLocations}
                 />
               )}
             </motion.div>
@@ -735,6 +824,7 @@ export default function App() {
                   onAddLog={handleAddLog}
                   onSeedMonthData={handleSeedMonthData}
                   onImportLogs={handleImportLogs}
+                  teamLocations={teamLocations}
                 />
               )}
             </motion.div>
@@ -746,8 +836,8 @@ export default function App() {
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 border-t border-slate-200 pt-6 text-center">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-550 font-sans font-medium">
           <div className="text-left">
-            <span className="font-semibold text-slate-800">Digital Logbook System v1.1</span> — Designed using high precision display standards.
-            <p className="text-[10px] text-slate-400 mt-0.5">Auto-saves to browser local persistence space asynchronously.</p>
+            <span className="font-semibold text-slate-800">Digital Logbook System v1.1</span> — CS 2026.
+            <p className="text-[10px] text-slate-400 mt-0.5">Digital logbook for office use</p>
           </div>
           
             <div className="flex items-center gap-3">

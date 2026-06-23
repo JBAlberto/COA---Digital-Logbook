@@ -101,6 +101,38 @@ export const TEAM_LOCATION_RULES: Record<string, TeamLocationRules> = Object.fro
   })
 );
 
+export const DEFAULT_TEAM_LOCATIONS: Record<string, string[]> = Object.fromEntries(
+  TEAMS.map(team => [team, TEAM_LOCATION_RULES[team]?.municipalities ?? []])
+);
+
+export function getTeamBaseName(team: string): string {
+  const idx = team.indexOf("(");
+  if (idx !== -1) {
+    return team.substring(0, idx).trim();
+  }
+  return team.trim();
+}
+
+export function getTeamDisplayLabel(team: string, teamLocations?: Record<string, string[]>): string {
+  if (!team) return team;
+  const baseName = getTeamBaseName(team);
+  
+  if (!team.includes("(")) {
+    return team;
+  }
+
+  // Get locations for this team from teamLocations or fall back to default
+  const locations = teamLocations && teamLocations[team] 
+    ? teamLocations[team] 
+    : (DEFAULT_TEAM_LOCATIONS[team] || []);
+
+  if (locations.length === 0) {
+    return `${baseName} (No Locations)`;
+  }
+
+  return `${baseName} (${locations.join(", ")})`;
+}
+
 export function getAllowedProvincesForTeam(team: string): string[] {
   return TEAM_LOCATION_RULES[team]?.provinces ?? [];
 }

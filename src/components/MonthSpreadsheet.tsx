@@ -1,11 +1,12 @@
-import React, { useState, useMemo, FormEvent, ChangeEvent } from "react";
+import React, { useState, useMemo, FormEvent, ChangeEvent, useEffect } from "react";
 import { LogEntry, MonthData } from "../types";
 import { 
   PROVINCES, 
   BARANGAYS_BY_MUNICIPALITY, 
   TEAMS,
   getAllowedMunicipalitiesForTeam,
-  MUNICIPALITIES_BY_PROVINCE
+  MUNICIPALITIES_BY_PROVINCE,
+  getTeamDisplayLabel
 } from "../data";
 import { 
   Search, 
@@ -32,6 +33,7 @@ interface MonthSpreadsheetProps {
   onAddLog: (entry: Omit<LogEntry, "id" | "createdAt">) => void;
   onSeedMonthData: (monthKey: string) => void;
   onImportLogs: (imported: LogEntry[]) => void;
+  teamLocations?: Record<string, string[]>;
 }
 
 export default function MonthSpreadsheet({
@@ -42,12 +44,19 @@ export default function MonthSpreadsheet({
   onDeleteLog,
   onAddLog,
   onSeedMonthData,
-  onImportLogs
+  onImportLogs,
+  teamLocations
 }: MonthSpreadsheetProps) {
   // Filtering & Search state
   const [search, setSearch] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [selectedLocationFilter, setSelectedLocationFilter] = useState("");
+  const [selectedMuniFilter, setSelectedMuniFilter] = useState("");
+
+  // Clear municipality filter option when team changes
+  useEffect(() => {
+    setSelectedMuniFilter("");
+  }, [selectedTeam]);
 
   // Inline editing state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -102,8 +111,11 @@ export default function MonthSpreadsheet({
       return Object.values(MUNICIPALITIES_BY_PROVINCE).flat() as string[];
     }
     if (!quickHasLocationSpecifics) return [];
+    if (teamLocations && teamLocations[quickTeam]) {
+      return teamLocations[quickTeam];
+    }
     return getAllowedMunicipalitiesForTeam(quickTeam);
-  }, [quickTeam, quickHasLocationSpecifics]);
+  }, [quickTeam, quickHasLocationSpecifics, teamLocations]);
 
   // Sync quick municipality and barangay immediately on team change
   React.useEffect(() => {
@@ -113,7 +125,7 @@ export default function MonthSpreadsheet({
       setQuickBarangay("");
     } else {
       setQuickProvince("Ilocos Norte");
-      let allowed = getAllowedMunicipalitiesForTeam(quickTeam);
+      let allowed = teamLocations && teamLocations[quickTeam] ? teamLocations[quickTeam] : getAllowedMunicipalitiesForTeam(quickTeam);
       if (quickTeam.trim() === "Office of the Supervising Auditor") {
         allowed = Object.values(MUNICIPALITIES_BY_PROVINCE).flat() as string[];
       }
@@ -127,7 +139,7 @@ export default function MonthSpreadsheet({
         setQuickBarangay("");
       }
     }
-  }, [quickTeam, quickHasLocationSpecifics]);
+  }, [quickTeam, quickHasLocationSpecifics, teamLocations]);
 
   // Sync quick barangay immediately when municipality changes manually (but allow manual typing overwrite)
   React.useEffect(() => {
@@ -140,6 +152,22 @@ export default function MonthSpreadsheet({
   const uniqueMunicipalities = useMemo(() => {
     return Array.from(new Set(filteredMonthLogs.map(l => l.municipality).filter(Boolean))).sort();
   }, [filteredMonthLogs]);
+
+  // Dynamic municipalities allowed in filter depending on selected team & reshuffled settings
+  const filterAllowedMunicipalities = useMemo(() => {
+    if (selectedTeam) {
+      if (selectedTeam.trim() === "Office of the Supervising Auditor") {
+        return Object.values(MUNICIPALITIES_BY_PROVINCE).flat();
+      }
+      return teamLocations && teamLocations[selectedTeam]
+        ? teamLocations[selectedTeam]
+        : getAllowedMunicipalitiesForTeam(selectedTeam);
+    }
+    // No team chosen: show unique municipalities that recorded logs this month
+    return uniqueMunicipalities.length > 0
+      ? uniqueMunicipalities
+      : (Object.values(MUNICIPALITIES_BY_PROVINCE).flat() as string[]);
+  }, [selectedTeam, teamLocations, uniqueMunicipalities]);
 
   // Get all unique barangays with data recorded for this month
   const uniqueBarangays = useMemo(() => {
@@ -155,14 +183,19 @@ export default function MonthSpreadsheet({
       
       const matchesTeam = selectedTeam === "" || log.team === selectedTeam;
 
+      const matchesMuni = selectedMuniFilter === "" || log.municipality === selectedMuniFilter;
+
       let matchesLocationValue = true;
       if (selectedLocationFilter) {
+        const isProvinceOnly = log.province && (!log.municipality || log.municipality.trim() === "") && (!log.brgy || log.brgy.trim() === "");
         const isMuniOnly = log.municipality && (!log.brgy || log.brgy.trim() === "");
         const isSK = log.brgy && log.brgy.toLowerCase().includes("sk");
         const isOthers = log.brgy && log.brgy.toLowerCase().includes("others");
         const isBrgyOnly = log.municipality && log.brgy && log.brgy.trim() !== "" && !log.brgy.toLowerCase().includes("sk") && !log.brgy.toLowerCase().includes("others");
 
-        if (selectedLocationFilter === "municipality") {
+        if (selectedLocationFilter === "province") {
+          matchesLocationValue = !!isProvinceOnly;
+        } else if (selectedLocationFilter === "municipality") {
           matchesLocationValue = !!isMuniOnly;
         } else if (selectedLocationFilter === "barangay") {
           matchesLocationValue = !!isBrgyOnly;
@@ -176,10 +209,11 @@ export default function MonthSpreadsheet({
       return (
         matchesSearch &&
         matchesTeam &&
+        matchesMuni &&
         matchesLocationValue
       );
     }).sort((a, b) => b.date.localeCompare(a.date) || b.timeIn.localeCompare(a.timeIn));
-  }, [filteredMonthLogs, search, selectedTeam, selectedLocationFilter]);
+  }, [filteredMonthLogs, search, selectedTeam, selectedMuniFilter, selectedLocationFilter]);
 
   // Paginated display
   const paginatedLogs = useMemo(() => {
@@ -280,13 +314,16 @@ export default function MonthSpreadsheet({
     }
     const hasLoc = editForm.team ? (!editForm.team.startsWith("Team 1 ") && !editForm.team.startsWith("Team 9 ")) : false;
     if (hasLoc) {
-      if (!editForm.municipality?.trim()) {
-        triggerNotification("Municipality is required.", "error");
-        return;
-      }
-      if (!editForm.brgy?.trim()) {
-        triggerNotification("Barangay is required.", "error");
-        return;
+      const isProvinceOnlyEdit = editForm.province && (!editForm.municipality || editForm.municipality.trim() === "") && (!editForm.brgy || editForm.brgy.trim() === "");
+      if (!isProvinceOnlyEdit) {
+        if (!editForm.municipality?.trim()) {
+          triggerNotification("Municipality is required.", "error");
+          return;
+        }
+        if (!editForm.brgy?.trim()) {
+          triggerNotification("Barangay is required.", "error");
+          return;
+        }
       }
     }
     if (!editForm.contactNumber?.trim()) {
@@ -476,20 +513,35 @@ export default function MonthSpreadsheet({
         </div>
 
         {/* Filters Grid */}
-        <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+        <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
           {/* Team Filter - Separated */}
           <div className="relative">
             <select
               value={selectedTeam}
               onChange={(e) => setSelectedTeam(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 text-left appearance-none cursor-pointer font-sans"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 text-left appearance-none cursor-pointer font-sans truncate pr-4"
             >
-              <option value="">Filter by Team: All</option>
+              <option value="">Team: All</option>
               {TEAMS.map(team => (
-                <option key={team} value={team}>{team}</option>
+                <option key={team} value={team}>{getTeamDisplayLabel(team, teamLocations)}</option>
               ))}
             </select>
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</div>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[9px]">▼</div>
+          </div>
+
+          {/* Dynamic Municipality Filter based on chosen team or active reshuffle logs */}
+          <div className="relative">
+            <select
+              value={selectedMuniFilter}
+              onChange={(e) => setSelectedMuniFilter(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 text-left appearance-none cursor-pointer font-sans truncate pr-4"
+            >
+              <option value="">Municipality: All</option>
+              {filterAllowedMunicipalities.map(muni => (
+                <option key={muni} value={muni}>{muni}</option>
+              ))}
+            </select>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[9px]">▼</div>
           </div>
 
           {/* Unified Location Filter (Combines Municipality, Barangay, and SK) */}
@@ -497,15 +549,16 @@ export default function MonthSpreadsheet({
             <select
               value={selectedLocationFilter}
               onChange={(e) => setSelectedLocationFilter(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 text-left appearance-none cursor-pointer font-sans"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-950 text-left appearance-none cursor-pointer font-sans truncate pr-4"
             >
               <option value="">Filter by: All</option>
+              <option value="province">by Province Level</option>
               <option value="municipality">by Municipality/City</option>
               <option value="barangay">Barangay</option>
               <option value="sk">Brgy SK</option>
               <option value="others">Others</option>
             </select>
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">▼</div>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[9px]">▼</div>
           </div>
         </div>
 
@@ -558,7 +611,7 @@ export default function MonthSpreadsheet({
               className="w-full bg-white border border-slate-250 text-xs rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
             >
               {TEAMS.map(t => (
-                <option key={t} value={t}>{t}</option>
+                <option key={t} value={t}>{getTeamDisplayLabel(t, teamLocations)}</option>
               ))}
             </select>
           </div>
@@ -739,7 +792,7 @@ export default function MonthSpreadsheet({
                             onChange={(e) => {
                               const selected = e.target.value;
                               const isNoLoc = selected.startsWith("Team 1 ") || selected.startsWith("Team 9 ");
-                              const allowed = getAllowedMunicipalitiesForTeam(selected);
+                              const allowed = teamLocations && teamLocations[selected] ? teamLocations[selected] : getAllowedMunicipalitiesForTeam(selected);
                               const defaultMuni = allowed.length > 0 ? allowed[0] : "";
                               const brgys = BARANGAYS_BY_MUNICIPALITY[defaultMuni] || [];
                               const defaultBrgy = brgys.length > 0 ? brgys[0] : "";
@@ -754,7 +807,7 @@ export default function MonthSpreadsheet({
                             className="bg-white border border-slate-300 rounded p-1 text-[11px] w-full"
                           >
                             {TEAMS.map(team => (
-                              <option key={team} value={team}>{team}</option>
+                              <option key={team} value={team}>{getTeamDisplayLabel(team, teamLocations)}</option>
                             ))}
                           </select>
                         </td>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Lock, RefreshCw, Key, Info } from "lucide-react";
 
+const HARDCODED_ADMIN_PASSWORD = "admin123";
 
 export type AdminLoginResult = {
   success: true;
